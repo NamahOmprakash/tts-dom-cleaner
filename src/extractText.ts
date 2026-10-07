@@ -164,10 +164,7 @@ function traverseBlocks(node: AnyNode, blocks: string[]): void {
  * divider stripping, and pattern filtering.
  */
 export function extractTextBlocks($: CheerioAPI, options: CleanOptions = {}): string[] {
-  const {
-    stripAsciiDividers = true,
-    removePatterns = [],
-  } = options;
+  const { stripAsciiDividers = true, removePatterns = [] } = options;
 
   const rawBlocks: string[] = [];
   const targetNode = $("body").get(0) || $.root().get(0);

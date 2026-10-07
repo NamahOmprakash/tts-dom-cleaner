@@ -29,10 +29,7 @@ export function dedupeParagraphsList(paragraphs: string[]): string[] {
 /**
  * Formats an array of paragraphs into the final output string based on preserveLineBreaks.
  */
-export function formatTextOutput(
-  paragraphs: string[],
-  preserveLineBreaks = true
-): string {
+export function formatTextOutput(paragraphs: string[], preserveLineBreaks = true): string {
   if (paragraphs.length === 0) {
     return "";
   }
@@ -45,11 +42,7 @@ export function formatTextOutput(
  * leaf blocks, ASCII dividers, and pattern matches directly from the Cheerio DOM.
  */
 export function sanitizeDomBlocks($: CheerioAPI, options: CleanOptions = {}): void {
-  const {
-    dedupeParagraphs = true,
-    stripAsciiDividers = true,
-    removePatterns = [],
-  } = options;
+  const { dedupeParagraphs = true, stripAsciiDividers = true, removePatterns = [] } = options;
 
   let lastNormalized = "";
   const blockSelectorList = Array.from(BLOCK_TAGS).join(", ");

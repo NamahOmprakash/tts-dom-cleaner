@@ -9,6 +9,12 @@ export default tseslint.config(
   },
   {
     files: ["**/*.ts", "**/*.js", "**/*.mjs"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly",
+      },
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/explicit-module-boundary-types": "off",

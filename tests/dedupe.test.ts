@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as cheerio from "cheerio";
-import {
-  dedupeParagraphsList,
-  formatTextOutput,
-  sanitizeDomBlocks,
-} from "../src/dedupe.js";
+import { dedupeParagraphsList, formatTextOutput, sanitizeDomBlocks } from "../src/dedupe.js";
 
 describe("dedupeParagraphsList", () => {
   it("drops immediately consecutive duplicates", () => {
@@ -34,18 +30,18 @@ describe("dedupeParagraphsList", () => {
 
   it("preserves non-consecutive duplicate paragraphs (like repeated dialogue)", () => {
     const input = [
-      "\"No.\"",
+      '"No."',
       "He shook his head furiously.",
-      "\"No.\"",
+      '"No."',
       "She reached for the door handle.",
-      "\"No.\"",
+      '"No."',
     ];
     expect(dedupeParagraphsList(input)).toEqual([
-      "\"No.\"",
+      '"No."',
       "He shook his head furiously.",
-      "\"No.\"",
+      '"No."',
       "She reached for the door handle.",
-      "\"No.\"",
+      '"No."',
     ]);
   });
 });

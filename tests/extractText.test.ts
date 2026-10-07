@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as cheerio from "cheerio";
-import {
-  extractTextBlocks,
-  isAsciiDivider,
-  normalizeBlockWhitespace,
-} from "../src/extractText.js";
+import { extractTextBlocks, isAsciiDivider, normalizeBlockWhitespace } from "../src/extractText.js";
 
 describe("ASCII divider detection", () => {
   it("matches valid dividers of 3 or more characters", () => {
@@ -56,20 +52,14 @@ describe("extractTextBlocks", () => {
       "<p>This is <b>bold <!-- inline comment --></b>, <i>italic</i>, and <a href='#'>a link</a> in <span>one</span> paragraph.</p>";
     const $ = cheerio.load(html);
     const blocks = extractTextBlocks($);
-    expect(blocks).toEqual([
-      "This is bold , italic, and a link in one paragraph.",
-    ]);
+    expect(blocks).toEqual(["This is bold , italic, and a link in one paragraph."]);
   });
 
   it("handles mixed containers with bare text and child <p> without duplication or loss", () => {
     const html = "<div>Some bare text<p>A child paragraph</p>More bare text</div>";
     const $ = cheerio.load(html);
     const blocks = extractTextBlocks($);
-    expect(blocks).toEqual([
-      "Some bare text",
-      "A child paragraph",
-      "More bare text",
-    ]);
+    expect(blocks).toEqual(["Some bare text", "A child paragraph", "More bare text"]);
   });
 
   it("handles HTML comments and nested blocks inside inline tags", () => {
@@ -91,9 +81,7 @@ describe("extractTextBlocks", () => {
     const html = "<p>&ldquo;Hello &amp; welcome&rdquo; &mdash; 5 &gt; 3 &amp; &#39;quotes&#39;</p>";
     const $ = cheerio.load(html);
     const blocks = extractTextBlocks($);
-    expect(blocks).toEqual([
-      "“Hello & welcome” — 5 > 3 & 'quotes'",
-    ]);
+    expect(blocks).toEqual(["“Hello & welcome” — 5 > 3 & 'quotes'"]);
   });
 
   it("strips ASCII art dividers when stripAsciiDividers is true", () => {

@@ -17,11 +17,7 @@ export function cleanHtml(html: string, options: CleanOptions = {}): string {
     return "";
   }
 
-  const {
-    output = "text",
-    dedupeParagraphs = true,
-    preserveLineBreaks = true,
-  } = options;
+  const { output = "text", dedupeParagraphs = true, preserveLineBreaks = true } = options;
 
   const $ = cheerio.load(html);
 

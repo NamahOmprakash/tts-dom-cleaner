@@ -1,15 +1,7 @@
 import type { CheerioAPI } from "cheerio";
 import type { CleanOptions } from "./types.js";
 
-const DEFAULT_JUNK_TAGS = [
-  "script",
-  "style",
-  "noscript",
-  "template",
-  "svg",
-  "iframe",
-  "canvas",
-];
+const DEFAULT_JUNK_TAGS = ["script", "style", "noscript", "template", "svg", "iframe", "canvas"];
 
 /**
  * Evaluates whether an inline CSS style string contains rules that visually hide the element.
@@ -26,7 +18,10 @@ export function isStyleHidden(styleStr: string): boolean {
     if (colonIdx === -1) continue;
 
     const prop = decl.slice(0, colonIdx).trim().toLowerCase();
-    let val = decl.slice(colonIdx + 1).trim().toLowerCase();
+    let val = decl
+      .slice(colonIdx + 1)
+      .trim()
+      .toLowerCase();
     if (!prop || !val) continue;
 
     val = val.replace(/!important/g, "").trim();
@@ -62,11 +57,7 @@ export function isStyleHidden(styleStr: string): boolean {
  * Prunes junk tags, opt-in tags, targeted selectors, and hidden elements from the DOM tree.
  */
 export function removeHiddenElements($: CheerioAPI, options: CleanOptions = {}): void {
-  const {
-    removeHidden = true,
-    removeSelectors = [],
-    removeTags = [],
-  } = options;
+  const { removeHidden = true, removeSelectors = [], removeTags = [] } = options;
 
   // 1. Always remove non-content/junk elements regardless of removeHidden
   $(DEFAULT_JUNK_TAGS.join(", ")).remove();
