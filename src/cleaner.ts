@@ -39,8 +39,7 @@ export function cleanHtml(html: string, options: CleanOptions = {}): string {
       return $.html().trim();
     }
 
-    const bodyHtml = $("body").html();
-    return bodyHtml !== null ? bodyHtml.trim() : $.html().trim();
+    return ($("body").html() ?? "").trim();
   }
 
   // 3. Output mode: Text

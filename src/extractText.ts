@@ -3,6 +3,8 @@ import type { AnyNode } from "domhandler";
 import type { CleanOptions } from "./types.js";
 
 export const BLOCK_TAGS = new Set([
+  "html",
+  "body",
   "p",
   "div",
   "h1",
@@ -32,7 +34,6 @@ export const BLOCK_TAGS = new Set([
   "dl",
   "ol",
   "ul",
-  "hr",
   "address",
 ]);
 
@@ -62,6 +63,23 @@ export function normalizeBlockWhitespace(text: string): string {
   }
 
   return normalizedLines.join("\n").trim();
+}
+
+/**
+ * Checks whether a node has any block-level descendant element.
+ */
+function containsBlockDescendant(node: AnyNode): boolean {
+  if (node.type !== "tag") return false;
+  const children = (node as unknown as { children?: AnyNode[] }).children || [];
+  for (const child of children) {
+    if (child.type === "tag") {
+      const tagName = (child as unknown as { name?: string }).name?.toLowerCase();
+      if ((tagName && BLOCK_TAGS.has(tagName)) || containsBlockDescendant(child)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -119,12 +137,15 @@ function traverseBlocks(node: AnyNode, blocks: string[]): void {
 
     if (child.type === "tag") {
       const tagName = (child as unknown as { name?: string }).name?.toLowerCase();
+
       if (tagName === "br") {
         inlineBuffer += "\n";
         continue;
       }
 
-      if (tagName && BLOCK_TAGS.has(tagName)) {
+      const isBlock = (tagName && BLOCK_TAGS.has(tagName)) || containsBlockDescendant(child);
+
+      if (isBlock) {
         // Child is a block element: flush preceding inline buffer, then recurse
         flushInline();
         traverseBlocks(child, blocks);
@@ -148,11 +169,10 @@ export function extractTextBlocks($: CheerioAPI, options: CleanOptions = {}): st
     removePatterns = [],
   } = options;
 
-  const rootNodes = $.root().get();
   const rawBlocks: string[] = [];
-
-  for (const rootNode of rootNodes) {
-    traverseBlocks(rootNode, rawBlocks);
+  const targetNode = $("body").get(0) || $.root().get(0);
+  if (targetNode) {
+    traverseBlocks(targetNode, rawBlocks);
   }
 
   const processedBlocks: string[] = [];
