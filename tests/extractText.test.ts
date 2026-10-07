@@ -45,6 +45,10 @@ describe("extractTextBlocks", () => {
     const html2 = "<p><span>Line one<br>Line two</span></p>";
     const $2 = cheerio.load(html2);
     expect(extractTextBlocks($2)).toEqual(["Line one\nLine two"]);
+
+    const html3 = "<p>Line one<br><br>Line two</p>";
+    const $3 = cheerio.load(html3);
+    expect(extractTextBlocks($3)).toEqual(["Line one\n\nLine two"]);
   });
 
   it("does not split paragraphs on inline tags and ignores comments within inline elements", () => {

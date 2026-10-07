@@ -3,7 +3,15 @@
   "version": "0.1.0",
   "description": "Pre-sanitizes messy HTML strings and removes visually hidden elements and duplicate paragraphs for Text-to-Speech engines.",
   "type": "module",
-  "author": "Antigravity Pair Programmer",
+  "author": "Namah Omprakash <namahomprakash25@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NamahOmprakash/tts-dom-cleaner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NamahOmprakash/tts-dom-cleaner/issues"
+  },
+  "homepage": "https://github.com/NamahOmprakash/tts-dom-cleaner#readme",
   "license": "MIT",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

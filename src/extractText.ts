@@ -59,7 +59,13 @@ export function normalizeBlockWhitespace(text: string): string {
     const cleaned = line.trim().replace(/[^\S\r\n]+/g, " ");
     if (cleaned.length > 0) {
       normalizedLines.push(cleaned);
+    } else if (normalizedLines.length > 0 && normalizedLines[normalizedLines.length - 1] !== "") {
+      normalizedLines.push("");
     }
+  }
+
+  while (normalizedLines.length > 0 && normalizedLines[normalizedLines.length - 1] === "") {
+    normalizedLines.pop();
   }
 
   return normalizedLines.join("\n").trim();
