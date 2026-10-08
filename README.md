@@ -1,139 +1,167 @@
 # tts-dom-cleaner
 
 [![npm version](https://img.shields.io/npm/v/tts-dom-cleaner.svg)](https://www.npmjs.com/package/tts-dom-cleaner)
-[![CI](https://github.com/NamahOmprakash/tts-dom-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/NamahOmprakash/tts-dom-cleaner/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/NamahOmprakash/tts-dom-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/NamahOmprakash/tts-dom-cleaner/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Pre-sanitizes messy HTML strings and purges visually hidden content, junk tags, and duplicate paragraphs for Text-to-Speech (TTS) synthesizers and distraction-free reader apps.
+Clean messy scraped HTML into plain text that is safe to feed to a text-to-speech engine. Removes hidden elements, junk tags, and duplicate paragraphs so TTS never reads invisible or repeated content aloud.
 
 ---
 
-## Why It Exists
+## Why
 
-Scraped articles, web novels, and reader extracts frequently contain DOM tricks designed to defeat ad-blockers and scrapers, or glitches caused by crawler duplication:
+Web-novel and article scrapers frequently return HTML containing text that is invisible in a browser but still present in the DOM: honeypot spans (`display:none`), watermarks (`font-size:0px`), duplicated paragraphs from crawler glitches, and script or style blocks. A Text-to-Speech (TTS) engine reads all of it aloud, ruining the listening experience.
 
-- **Zero-size & invisible traps**: Text hidden using `font-size: 0px`, `display: none`, `opacity: 0`, or `aria-hidden="true"`. Screen readers and TTS synthesizers read these invisible watermarks and honeypots aloud, ruining the listening experience.
-- **Scraper artifacts & DOM doubling**: Chapters often feature duplicated consecutive paragraphs or repetitive divider lines (`***`, `---`).
-- **Junk elements**: Embedded scripts, styles, iframes, and canvas tags that inject noise.
+Standard sanitizers such as `sanitize-html` strip the `style` attribute altogether, which inadvertently turns hidden trap text into visible text. `tts-dom-cleaner` inspects inline styles and accessibility attributes _before_ that happens.
 
-`tts-dom-cleaner` runs a defensive pre-sanitization pass over the DOM and returns clean, normalized plain text (or sanitized HTML) ready for TTS speech synthesis.
+### Why not `html-to-text` or Mozilla's Readability?
+
+Generic converters like `html-to-text` or readability extractors focus on converting markup or isolating the main article body. They do not inspect inline CSS properties for anti-copy honeypots (`opacity:0`, `font-size:0`, `display:none !important`) or detect sequential DOM doubling. `tts-dom-cleaner` is specifically engineered as a lightweight, pre-sanitization pass ahead of speech synthesizers and reader apps.
 
 It has **one runtime dependency ([`cheerio`](https://github.com/cheeriojs/cheerio))**.
 
 ---
 
-## Before & After
+## Before / After
 
-### Raw Input HTML
+**Input HTML**
 
 ```html
-<header><h1>Chapter 1: The Lair</h1></header>
-<p>Arthur climbed the jagged rocks.</p>
-<p style="display:none !important">Scraped by novel-hub watermark</p>
-<p>Arthur climbed the jagged rocks.</p>
-<div style="font-size: 0px">anti-scraper trap sentence</div>
-<p>***</p>
-<div class="ad-banner">Click for free coins!</div>
-<p>A roar echoed from the cave.</p>
+<p>The gate opened.</p>
+<p style="display:none">Read this novel at example.com</p>
+<p>The gate opened.</p>
+<p>Chapter 1<br />Arrival</p>
 ```
 
-### Cleaned TTS Output (`cleanHtml(html, { removeSelectors: ['.ad-banner'] })`)
+**Cleaned TTS Text**
 
 ```text
-Chapter 1: The Lair
+The gate opened.
 
-Arthur climbed the jagged rocks.
-
-A roar echoed from the cave.
+Chapter 1
+Arrival
 ```
 
 ---
 
-## Installation
+## Install
 
 ```bash
 npm install tts-dom-cleaner
 ```
 
-Requires **Node.js >= 20.0.0**.
+Requires **Node.js 20 or later**.
 
 ---
 
 ## Quick Start
 
-```typescript
+### ESM
+
+```js
 import { cleanHtml } from "tts-dom-cleaner";
 
-const messyHtml = `
-  <div>
-    <p>The journey begins here.</p>
-    <span style="display: none">Hidden watermark</span>
-    <p>The journey begins here.</p>
-    <div class="patreon-banner">Support author on Patreon</div>
-  </div>
-`;
+const text = cleanHtml(html);
+```
 
-// Extract clean text for TTS
-const text = cleanHtml(messyHtml, {
-  removeSelectors: [".patreon-banner"],
+### CommonJS
+
+```js
+const { cleanHtml } = require("tts-dom-cleaner");
+
+const text = cleanHtml(html);
+```
+
+### With Options
+
+```js
+const text = cleanHtml(html, {
+  removeSelectors: [".ad", ".watermark", ".patreon-box"],
+  removePatterns: [/read at example\.com/i],
+  removeTags: ["nav", "footer"],
 });
-
-console.log(text);
-// "The journey begins here."
 ```
 
 ---
 
-## API Reference
+## Options
 
-### `cleanHtml(html: string, options?: CleanOptions): string`
+| Option               | Type               | Default  | Description                                                                                                                                   |
+| :------------------- | :----------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| `removeHidden`       | `boolean`          | `true`   | Remove elements hidden via inline style (`display:none`, `visibility:hidden`, `opacity:0`, `font-size:0`), `hidden`, or `aria-hidden="true"`. |
+| `dedupeParagraphs`   | `boolean`          | `true`   | Drop immediately consecutive duplicate paragraphs. Normalized comparison collapses intra-line whitespace.                                     |
+| `removeSelectors`    | `string[]`         | `[]`     | Array of custom CSS selectors to drop before text extraction (e.g. `['.watermark', '.ad-box']`).                                              |
+| `removePatterns`     | `RegExp[]`         | `[]`     | Array of regular expressions; any matching text block is dropped.                                                                             |
+| `removeTags`         | `string[]`         | `[]`     | Opt-in list of HTML tag names to drop (e.g. `['nav', 'footer']`). Semantic tags like `<header>` are kept by default to retain chapter titles. |
+| `output`             | `"text" \| "html"` | `"text"` | Return format. `"text"` returns normalized paragraphs; `"html"` returns cleaned DOM markup.                                                   |
+| `preserveLineBreaks` | `boolean`          | `true`   | In text mode, joins paragraphs with `\n\n` when `true`, or with single spaces when `false`.                                                   |
+| `stripAsciiDividers` | `boolean`          | `true`   | Remove divider lines containing 3 or more repeating characters (`***`, `---`, `___`, `===`, `~~~`).                                           |
 
-#### Options
-
-| Option               | Type               | Default  | Description                                                                                                                                             |
-| :------------------- | :----------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `removeHidden`       | `boolean`          | `true`   | Strip elements hidden via inline styles (`display:none`, `visibility:hidden`, `opacity:0`, `font-size:0`), `hidden` attribute, or `aria-hidden="true"`. |
-| `dedupeParagraphs`   | `boolean`          | `true`   | Drops immediately consecutive duplicate paragraphs. Normalized comparison collapses intra-line whitespace.                                              |
-| `removeSelectors`    | `string[]`         | `[]`     | Array of custom CSS selectors to prune before text extraction (e.g. `['.watermark', '.ad-box']`).                                                       |
-| `removePatterns`     | `RegExp[]`         | `[]`     | Array of regular expressions; any text block matching a pattern is dropped.                                                                             |
-| `removeTags`         | `string[]`         | `[]`     | Opt-in list of HTML tag names to drop (e.g. `['nav', 'footer']`). Semantic tags like `<header>` are kept by default to retain chapter titles.           |
-| `output`             | `"text" \| "html"` | `"text"` | Return format. `"text"` returns normalized paragraphs; `"html"` returns cleaned DOM markup.                                                             |
-| `preserveLineBreaks` | `boolean`          | `true`   | In text mode, joins paragraphs with `\n\n` when `true`, or with single spaces when `false`.                                                             |
-| `stripAsciiDividers` | `boolean`          | `true`   | Strips lines containing 3 or more repeating divider characters (`***`, `---`, `___`, `===`, `~~~`).                                                     |
-
-> **Note on Deduplication**: Only immediately consecutive identical paragraphs are deduplicated by default. Legitimate non-consecutive repetitions common in literature (e.g., repeated character dialogue like `"No."` separated by narration) are intentionally preserved.
+> **Always-Removed Tags**: Non-readable junk tags (`script`, `style`, `noscript`, `template`, `svg`, `iframe`, and `canvas`) are always removed regardless of options.
+>
+> **Note on Deduplication**: Only immediately consecutive identical paragraphs are deduplicated by default. Legitimate non-consecutive repetitions common in literature (e.g., repeated character dialogue like `"No."` separated by narrative action) are intentionally preserved.
 
 ---
 
-## Security Disclaimer
+## How It Works
 
-> [!WARNING]
-> **`tts-dom-cleaner` is NOT an XSS or HTML security sanitizer.**
-> It is designed exclusively to remove visual hiding tricks and noise for Text-to-Speech synthesis and reader modes. It does not sanitize malicious attributes (e.g. `onload`, `javascript:` protocols).
->
-> If you are accepting untrusted user-submitted HTML in a web application, always pipe input through a security sanitizer like [DOMPurify](https://github.com/cure53/DOMPurify) or [sanitize-html](https://github.com/apostrophecms/sanitize-html).
+1. **Parse**: Loads the HTML string into Cheerio with zero external browser overhead.
+2. **Purge Junk & Targeted Selectors**: Strips non-content elements (`<script>`, `<style>`, `<template>`, etc.), along with user-supplied `removeTags` and `removeSelectors`.
+3. **Inspect Visibility**: Scans inline `style` declarations and attributes. Removes nodes evaluating to `display:none`, `visibility:hidden`, `opacity:0`, `font-size:0`, `hidden`, or `aria-hidden="true"`, automatically pruning all descendants.
+4. **Extract Blocks**: Traverses semantic block leaves, cleanly translating `<br>` tags into newlines and maintaining inline tag text (`<b>`, `<span>`, `<a>`) without fragmenting paragraphs or duplicating mixed bare-text containers.
+5. **Normalize & Deduplicate**: Drops ASCII divider lines and blocks matching `removePatterns`, collapses sequential duplicate paragraphs, and joins paragraphs with clean delimiters (`\n\n`).
 
 ---
 
 ## Known Limitations
 
-- **External CSS Stylesheets**: Visibility is inspected via inline `style` attributes. Classes defined in external stylesheets (e.g. `.is-hidden { display: none; }`) cannot be computed without a full layout engine. Use `removeSelectors` to target known hidden class names.
-- **Off-screen Positioning**: CSS tricks like `position: absolute; left: -9999px;` or `text-indent: -9999px;` are not detected automatically. Use `removeSelectors` for known off-screen containers.
-- **Automated Watermark Detection**: Unmarked watermarks embedded directly in regular text without distinctive selectors, styles, or patterns cannot be detected automatically. Use `removePatterns` with targeted regexes.
+- **External CSS Stylesheets**: Visibility is inspected exclusively via inline `style` attributes. Classes defined in external stylesheets (e.g. `.hidden { display: none; }`) cannot be computed without a browser layout engine. Use `removeSelectors` for known hidden class names.
+- **Off-screen Positioning**: CSS tricks like `position: absolute; left: -9999px;` or `text-indent: -9999px;` are not detected automatically. Target these with `removeSelectors`.
+- **Automated Watermark Guessing**: Unmarked watermarks embedded directly in regular text without distinctive styles, selectors, or patterns cannot be detected automatically. Target them using `removePatterns`.
+
+---
+
+## Security
+
+This is **not** an XSS or HTML security sanitizer. It is designed solely to clean DOM text for speech synthesis and reader modes. It does not sanitize malicious attributes (such as `onload` or `javascript:` protocols). Always pipe untrusted user input through a security sanitizer like [DOMPurify](https://github.com/cure53/DOMPurify) or [sanitize-html](https://github.com/apostrophecms/sanitize-html).
+
+---
+
+## Development
+
+```bash
+# Install dependencies
+npm ci
+
+# Run test suite
+npm test
+
+# Run tests with coverage (target: >=90%)
+npm run test:coverage
+
+# Run linter and typechecker
+npm run lint
+npm run typecheck
+
+# Build dual ESM/CJS bundles
+npm run build
+```
 
 ---
 
 ## Roadmap
 
-- **v0.2.0**: `toSpeechChunks(text: string, options?: { maxChars?: number }): string[]` — Sentence batching leveraging `Intl.Segmenter` to split long texts into TTS synthesis batches while respecting abbreviations (e.g., "Mr.", "Dr.") and ellipses.
+- **v0.2.0**: `toSpeechChunks(text: string, options?: { maxChars?: number }): string[]` — Sentence batching leveraging `Intl.Segmenter` to split long text into TTS synthesis batches while respecting abbreviations (e.g., "Mr.", "Dr.") and ellipses.
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## Credits & Attribution
 
-- **Core Dependency**: Powered by [`cheerio`](https://github.com/cheeriojs/cheerio) for fast, robust DOM parsing.
-- **Origin**: This logic originates from the pull request _"feat(reader): add DOM pre-sanitizer to fix TTS artifacts and duplicates"_ on the [Inreader](https://github.com) project.
-- **AI Pair Programming**: Developed with AI pair-programming assistance from Antigravity (Google DeepMind) in compliance with academic and open-source course disclosure guidelines.
+- Powered by [Cheerio](https://cheerio.js.org/) for HTML parsing.
+- Originated from the pull request _"feat(reader): add DOM pre-sanitizer to fix TTS artifacts and duplicates"_ ([Inreader #2072](https://github.com/Inreader/Inreader/pull/2072)).
+- **AI Disclosure**: Built with AI assistance: Antigravity (Gemini) for implementation, and Claude for review and planning. All code was reviewed, verified, and tested by the author.
 
 ---
 
