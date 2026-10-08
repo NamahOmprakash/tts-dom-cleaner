@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/tts-dom-cleaner.svg)](https://www.npmjs.com/package/tts-dom-cleaner)
 [![CI](https://github.com/NamahOmprakash/tts-dom-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/NamahOmprakash/tts-dom-cleaner/actions)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Clean messy scraped HTML into plain text that is safe to feed to a text-to-speech engine. Removes hidden elements, junk tags, and duplicate paragraphs so TTS never reads invisible or repeated content aloud.
@@ -12,11 +13,11 @@ Clean messy scraped HTML into plain text that is safe to feed to a text-to-speec
 
 Web-novel and article scrapers frequently return HTML containing text that is invisible in a browser but still present in the DOM: honeypot spans (`display:none`), watermarks (`font-size:0px`), duplicated paragraphs from crawler glitches, and script or style blocks. A Text-to-Speech (TTS) engine reads all of it aloud, ruining the listening experience.
 
-Standard sanitizers such as `sanitize-html` strip the `style` attribute altogether, which inadvertently turns hidden trap text into visible text. `tts-dom-cleaner` inspects inline styles and accessibility attributes _before_ that happens.
+Standard sanitizers such as `sanitize-html` by default strip the `style` attribute, which inadvertently turns hidden trap text into visible text. `tts-dom-cleaner` inspects inline styles and accessibility attributes _before_ that happens.
 
 ### Why not `html-to-text` or Mozilla's Readability?
 
-Generic converters like `html-to-text` or readability extractors focus on converting markup or isolating the main article body. They do not inspect inline CSS properties for anti-copy honeypots (`opacity:0`, `font-size:0`, `display:none !important`) or detect sequential DOM doubling. `tts-dom-cleaner` is specifically engineered as a lightweight, pre-sanitization pass ahead of speech synthesizers and reader apps.
+These tools are built for markup conversion or main-content extraction. By default they aren't designed to detect hidden text or consecutive duplicate blocks for TTS. `tts-dom-cleaner` is specifically engineered as a lightweight pre-sanitization pass ahead of speech synthesizers and reader apps.
 
 It has **one runtime dependency ([`cheerio`](https://github.com/cheeriojs/cheerio))**.
 
@@ -82,6 +83,8 @@ const text = cleanHtml(html, {
 });
 ```
 
+> **Full Example**: Run `node examples/basic.mjs` after building to see a complete runnable example.
+
 ---
 
 ## Options
@@ -105,7 +108,7 @@ const text = cleanHtml(html, {
 
 ## How It Works
 
-1. **Parse**: Loads the HTML string into Cheerio with zero external browser overhead.
+1. **Parse**: Loads the HTML into Cheerio (no browser needed).
 2. **Purge Junk & Targeted Selectors**: Strips non-content elements (`<script>`, `<style>`, `<template>`, etc.), along with user-supplied `removeTags` and `removeSelectors`.
 3. **Inspect Visibility**: Scans inline `style` declarations and attributes. Removes nodes evaluating to `display:none`, `visibility:hidden`, `opacity:0`, `font-size:0`, `hidden`, or `aria-hidden="true"`, automatically pruning all descendants.
 4. **Extract Blocks**: Traverses semantic block leaves, cleanly translating `<br>` tags into newlines and maintaining inline tag text (`<b>`, `<span>`, `<a>`) without fragmenting paragraphs or duplicating mixed bare-text containers.
@@ -117,6 +120,9 @@ const text = cleanHtml(html, {
 
 - **External CSS Stylesheets**: Visibility is inspected exclusively via inline `style` attributes. Classes defined in external stylesheets (e.g. `.hidden { display: none; }`) cannot be computed without a browser layout engine. Use `removeSelectors` for known hidden class names.
 - **Off-screen Positioning**: CSS tricks like `position: absolute; left: -9999px;` or `text-indent: -9999px;` are not detected automatically. Target these with `removeSelectors`.
+- **Invisible Unicode Characters**: Zero-width characters such as U+200B (zero-width space) are not stripped in v0.1.0.
+- **Extreme Nesting**: HTML nested more than roughly 5,000 levels deep throws a `RangeError` (call stack overflow). Typical web pages are far below this.
+- **`<pre>` Whitespace**: Whitespace inside `<pre>` blocks is normalised like other text; indentation is not preserved.
 - **Automated Watermark Guessing**: Unmarked watermarks embedded directly in regular text without distinctive styles, selectors, or patterns cannot be detected automatically. Target them using `removePatterns`.
 
 ---
@@ -151,7 +157,7 @@ npm run build
 
 ## Roadmap
 
-- **v0.2.0**: `toSpeechChunks(text: string, options?: { maxChars?: number }): string[]` — Sentence batching leveraging `Intl.Segmenter` to split long text into TTS synthesis batches while respecting abbreviations (e.g., "Mr.", "Dr.") and ellipses.
+- **v0.2.0**: `toSpeechChunks(text: string, options?: { maxChars?: number }): string[]` — Sentence batching leveraging `Intl.Segmenter` to split long text into TTS synthesis batches while respecting abbreviations (e.g., "Mr.", "Dr.") and ellipses; invisible-character stripping.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
