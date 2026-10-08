@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/tts-dom-cleaner.svg)](https://www.npmjs.com/package/tts-dom-cleaner)
 [![CI](https://github.com/NamahOmprakash/tts-dom-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/NamahOmprakash/tts-dom-cleaner/actions)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
+[![node](https://img.shields.io/node/v/tts-dom-cleaner.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Clean messy scraped HTML into plain text that is safe to feed to a text-to-speech engine. Removes hidden elements, junk tags, and duplicate paragraphs so TTS never reads invisible or repeated content aloud.
@@ -13,7 +13,7 @@ Clean messy scraped HTML into plain text that is safe to feed to a text-to-speec
 
 Web-novel and article scrapers frequently return HTML containing text that is invisible in a browser but still present in the DOM: honeypot spans (`display:none`), watermarks (`font-size:0px`), duplicated paragraphs from crawler glitches, and script or style blocks. A Text-to-Speech (TTS) engine reads all of it aloud, ruining the listening experience.
 
-Standard sanitizers such as `sanitize-html` by default strip the `style` attribute, which inadvertently turns hidden trap text into visible text. `tts-dom-cleaner` inspects inline styles and accessibility attributes _before_ that happens.
+Standard sanitizers such as `sanitize-html` strip the `style` attribute by default, which inadvertently turns hidden trap text into visible text. `tts-dom-cleaner` inspects inline styles and accessibility attributes _before_ that happens.
 
 ### Why not `html-to-text` or Mozilla's Readability?
 
@@ -83,7 +83,7 @@ const text = cleanHtml(html, {
 });
 ```
 
-> **Full Example**: Run `node examples/basic.mjs` after building to see a complete runnable example.
+Run `node examples/basic.mjs` after building to see a full runnable example.
 
 ---
 
@@ -118,11 +118,11 @@ const text = cleanHtml(html, {
 
 ## Known Limitations
 
+- **Invisible Unicode characters**: Zero-width characters such as U+200B (zero-width space) are not stripped in v0.1.0.
+- **Extreme nesting**: HTML nested more than roughly 5,000 levels deep throws a `RangeError` (stack overflow). Typical pages are far below this.
+- **`<pre>` whitespace**: Whitespace inside `<pre>` blocks is normalised like other text; indentation is not preserved.
 - **External CSS Stylesheets**: Visibility is inspected exclusively via inline `style` attributes. Classes defined in external stylesheets (e.g. `.hidden { display: none; }`) cannot be computed without a browser layout engine. Use `removeSelectors` for known hidden class names.
 - **Off-screen Positioning**: CSS tricks like `position: absolute; left: -9999px;` or `text-indent: -9999px;` are not detected automatically. Target these with `removeSelectors`.
-- **Invisible Unicode Characters**: Zero-width characters such as U+200B (zero-width space) are not stripped in v0.1.0.
-- **Extreme Nesting**: HTML nested more than roughly 5,000 levels deep throws a `RangeError` (call stack overflow). Typical web pages are far below this.
-- **`<pre>` Whitespace**: Whitespace inside `<pre>` blocks is normalised like other text; indentation is not preserved.
 - **Automated Watermark Guessing**: Unmarked watermarks embedded directly in regular text without distinctive styles, selectors, or patterns cannot be detected automatically. Target them using `removePatterns`.
 
 ---
